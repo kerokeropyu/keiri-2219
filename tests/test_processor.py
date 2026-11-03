@@ -10,9 +10,9 @@ def _source_row(voucher: int, subject: int, parent: int, debit: int, credit: int
     return [2219, 250731, 7, voucher, subject, "", "07ﾃｽﾄ", debit, credit, 0, "課10", parent]
 
 
-def _target_row(voucher: int, debit: int, credit: int) -> list[object]:
+def _target_row(voucher: int, debit: int, credit: int, tax_class: str = "課10") -> list[object]:
     row: list[object] = [384, 250731, 7, voucher, 2219, "預かり金その他", "07ﾃｽﾄ"]
-    row += [None, None, debit, None, None, None, None, credit, None, None, None, None, 0, "課10"]
+    row += [None, None, debit, None, None, None, None, credit, None, None, None, None, 0, tax_class]
     return row
 
 
@@ -91,7 +91,7 @@ def test_multiple_subjects_insert_row_with_red_a_column() -> None:
 
 
 def test_filled_row_only_gets_tax_amount() -> None:
-    workbook = _build_workbook([], [_target_row(100, 1000, 0)])
+    workbook = _build_workbook([], [_target_row(100, 1000, 0, "課08")])
     target = _target(workbook)
     get_cell(target, 4, 8).value = "8"
     get_cell(target, 4, 11).value = "7199"
@@ -136,3 +136,29 @@ def test_tax_mismatch_is_not_written() -> None:
 
     assert summary.skipped == {"明細合計×税率と税額が一致しない": 1}
     assert get_cell(_target(workbook), 4, 14).value is None
+
+
+def test_tax_class_08_is_written_as_8_percent() -> None:
+    workbook = _build_workbook(
+        [_source_row(100, 384, 100, 0, 800), _source_row(101, 6523, 100, 0, 10000)],
+        [_target_row(100, 800, 0, "課08")],
+    )
+
+    summary = process_workbook(workbook)
+
+    target = _target(workbook)
+    assert summary.full_entries == 1
+    assert get_cell(target, 4, 8).value == 8
+    assert get_cell(target, 4, 13).value == 800
+
+
+def test_tax_only_row_with_different_rate_is_not_written() -> None:
+    workbook = _build_workbook([], [_target_row(100, 1000, 0, "課10")])
+    target = _target(workbook)
+    get_cell(target, 4, 8).value = 8
+    get_cell(target, 4, 11).value = 7199
+
+    summary = process_workbook(workbook)
+
+    assert summary.skipped == {"課税区分と入力済みの税率が一致しない": 1}
+    assert get_cell(target, 4, 13).value is None

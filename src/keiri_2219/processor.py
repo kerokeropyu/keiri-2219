@@ -12,6 +12,7 @@ from keiri_2219.constants import (
     SOURCE_SHEET,
     TARGET_SHEET,
     TAX_CLASS_PERCENTS,
+    TAXABLE_CLASS_PERCENTS,
     TGT_COPY_LAST_COLUMN,
     TGT_CREDIT,
     TGT_CREDIT_SUBJECT,
@@ -159,6 +160,12 @@ def _plan_tax_only_entry(
     percent = to_int(get_cell(target, row, TGT_RATE).value)
     if percent not in side.tax_columns:
         _skip(summary, row, "入力済みの税率が5・8・10ではない")
+        return
+    tax_class = str(get_cell(target, row, TGT_TAX_CLASS).value)
+    expected_percent = TAXABLE_CLASS_PERCENTS.get(tax_class)
+    if expected_percent is not None and percent != expected_percent:
+        _skip(summary, row, "課税区分と入力済みの税率が一致しない")
+        logger.warning("  税率確認NG: 課税区分=%s 入力済みの税率=%d%%", tax_class, percent)
         return
     if is_empty(get_cell(target, row, side.subject_column).value):
         _skip(summary, row, f"{side.name}の科目が入っていない")
