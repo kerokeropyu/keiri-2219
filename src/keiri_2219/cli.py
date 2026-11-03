@@ -52,9 +52,20 @@ def _run(argv: list[str] | None) -> int:
             return 1
         print("ファイルを保存しています...")
         workbook.save(output_path)
+    except PermissionError as error_detail:
+        logger.exception("ファイルにアクセスできません")
+        print(f"エラー: ファイルにアクセスできません: {error_detail.filename}")
+        print("Excelでファイルを開いていませんか？閉じてから、もう一度実行してください。")
+        return 1
     except (OSError, ValueError) as error_detail:
         logger.exception("処理に失敗しました")
         print(f"エラー: {error_detail}")
+        return 1
+    except Exception:
+        # 想定外のエラーも、原因を調べられるようにログへ残す
+        logger.exception("想定外のエラーが発生しました")
+        print("エラー: 想定外のエラーが発生しました。処理を中止しました。")
+        print(f"ログを添えて、開発担当者に連絡してください: {args.log_dir}")
         return 1
 
     logger.info("処理終了: %s", output_path)
@@ -101,7 +112,14 @@ def _wait_for_enter() -> None:
 
 
 def _default_output_path(input_path: Path) -> Path:
-    return input_path.with_name(f"{input_path.stem}_2219処理済み{input_path.suffix}")
+    """同じ名前のファイルがあれば、(2)、(3)…と連番を付けて重ならない名前にする。"""
+    base_name = f"{input_path.stem}_2219処理済み"
+    output_path = input_path.with_name(f"{base_name}{input_path.suffix}")
+    number = 2
+    while output_path.exists():
+        output_path = input_path.with_name(f"{base_name}({number}){input_path.suffix}")
+        number += 1
+    return output_path
 
 
 def _validate_paths(input_path: Path, output_path: Path) -> str | None:
