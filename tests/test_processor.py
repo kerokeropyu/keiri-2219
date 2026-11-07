@@ -86,8 +86,10 @@ def test_multiple_subjects_insert_row_with_red_a_column() -> None:
     assert get_cell(target, 5, 10).value is None
     assert get_cell(target, 5, 11).value == 243
     assert get_cell(target, 5, 14).value == 1000
+    assert get_cell(target, 4, 1).fill.start_color.rgb == RED
     assert get_cell(target, 5, 1).fill.start_color.rgb == RED
     assert get_cell(target, 6, 4).value == 200
+    assert get_cell(target, 6, 1).fill.start_color.rgb != RED  # 未入力の行は塗らない
 
 
 def test_filled_row_only_gets_tax_amount() -> None:
@@ -101,6 +103,7 @@ def test_filled_row_only_gets_tax_amount() -> None:
     assert summary.tax_only_entries == 1
     assert get_cell(target, 4, 11).value == "7199"
     assert get_cell(target, 4, 13).value == 1000
+    assert get_cell(target, 4, 1).fill.start_color.rgb == RED
 
 
 def test_row_with_tax_amount_is_not_changed() -> None:

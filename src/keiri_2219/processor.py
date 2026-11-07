@@ -236,6 +236,7 @@ def _plan_full_entry(
 def _write_tax_only_entry(target: Worksheet, entry: TaxOnlyEntry) -> None:
     tax_column = entry.side.tax_columns[entry.percent]
     write_red(get_cell(target, entry.row, tax_column), entry.tax)
+    fill_red(get_cell(target, entry.row, 1))
 
 
 def _write_full_entry(target: Worksheet, entry: FullEntry) -> None:
@@ -247,16 +248,16 @@ def _write_full_entry(target: Worksheet, entry: FullEntry) -> None:
         row = entry.row + offset
         if offset > 0:
             _copy_row_header(target, entry.row, row)
+        # 元の行も追加行も、修正した行としてA列を赤くする
+        fill_red(get_cell(target, row, 1))
         write_red(get_cell(target, row, TGT_RATE), entry.percent)
         write_red(get_cell(target, row, entry.side.subject_column), line.subject)
         write_red(get_cell(target, row, entry.side.tax_columns[entry.percent]), line.tax)
 
 
 def _copy_row_header(target: Worksheet, source_row: int, new_row: int) -> None:
-    """元の行のA〜G列を追加行へ複写し、A列を赤くする。"""
-    first_cell = get_cell(target, new_row, 1)
-    first_cell.value = get_cell(target, source_row, 1).value
-    fill_red(first_cell)
+    """元の行のA〜G列を追加行へ複写する。A列は値だけ複写する。"""
+    get_cell(target, new_row, 1).value = get_cell(target, source_row, 1).value
 
     for column in range(2, TGT_COPY_LAST_COLUMN + 1):
         value = get_cell(target, source_row, column).value
